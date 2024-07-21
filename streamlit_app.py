@@ -19,14 +19,14 @@ class Data(BaseModel):
     """Extracted data about terms."""
     terms: List[Term]
 
-def extract_terms(api_key, source_text, target_text):
+def extract_terms(api_key, source_text, target_text, source_lang, target_lang):
     os.environ["OPENAI_API_KEY"] = api_key
 
     llm = ChatOpenAI(model="gpt-4o")
 
     prompt = ChatPromptTemplate.from_messages([
-        ("system", "你是一个资深的术语提取专家,提取术语时term_type严格遵循以下术语分类标准:【专业术语】、【通用术语】、【活动名称】、【人名】、【地名】、【机构名】、【其他】,请从给定的文本中提取术语信息，所有术语务必提供英文译文,并以以下JSON格式返回结果，如果没有抽取到术语则也输出一个空值的JSON输出:"),
-        ("user", "```json\n{{\"terms\": [\n {{\n \"term_cn\": \"\",\n \"term_en\": \"\",\n \"term_type\": \"\",\n \"term_explanation\": \"\"\n }}\n]}}\n```\n请从以下文本中提取术语信息:\n{input}")
+        ("system", f"你是一个资深的术语提取专家，提取术语时term_type严格遵循以下术语分类标准:【专业术语】、【通用术语】、【活动名称】、【人名】、【地名】、【机构名】、【其他】。请从给定的文本中提取术语信息，所有术语务必提供英文译文，并以以下JSON格式返回结果。如果没有抽取到术语则也输出一个空值的JSON输出:"),
+        ("user", f"```json\n{{{{\"terms\": [\n {{{{ \"term_cn\": \"\",\n \"term_en\": \"\",\n \"term_type\": \"\",\n \"term_explanation\": \"\"\n }}}}\n]}}}}\n```\n请从以下文本中提取术语信息。源语言：{source_lang}, 目标语言：{target_lang}\n{source_text}\n{target_text}")
     ])
 
     output_parser = PydanticOutputParser(pydantic_object=Data)
@@ -51,13 +51,18 @@ st.title('术语提取工具')
 
 api_key = st.text_input('请输入OpenAI API密钥', type='password')
 source_text = st.text_area('请输入源语言文本')
-target_text = st.text_area('请输入目标语言文本')
+target_text = st.text_area('请输入目标语言文本（可选）')
+
+source_lang = st.selectbox('选择源语言', ['中文', '英文', '其他'])
+target_lang = st.selectbox('选择目标语言', ['英文', '中文', '其他'])
 
 if st.button('提取术语'):
-    if not api_key or not source_text or not target_text:
+    if not api_key or not source_text:
         st.error('请填写所有字段')
+    elif not target_text and (not source_lang or not target_lang):
+        st.error('如果没有目标语言文本，请选择源语言和目标语言')
     else:
-        terms_data = extract_terms(api_key, source_text, target_text)
+        terms_data = extract_terms(api_key, source_text, target_text, source_lang, target_lang)
 
         if terms_data:
             df = pd.DataFrame(terms_data)
