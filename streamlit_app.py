@@ -70,9 +70,8 @@ if st.button('提取术语'):
 
             # 将DataFrame导出为Excel文件
             output = BytesIO()
-            writer = pd.ExcelWriter(output, engine='xlsxwriter')
-            df.to_excel(writer, index=False, sheet_name='Terms')
-            writer.save()
+            with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+                df.to_excel(writer, index=False, sheet_name='Terms')
             output.seek(0)
 
             st.download_button(
