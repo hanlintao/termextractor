@@ -2,3 +2,4 @@ streamlit
 pandas
 langchain_openai
 langchain_core
+xlsxwriter
