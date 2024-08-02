@@ -19,8 +19,12 @@ class Data(BaseModel):
     """Extracted data about terms."""
     terms: List[Term]
 
-def extract_terms(api_key, source_text, target_text, source_lang, target_lang):
+def extract_terms(api_key, custom_env, source_text, target_text, source_lang, target_lang):
     os.environ["OPENAI_API_KEY"] = api_key
+
+    if custom_env:
+        key, value = custom_env.split('=')
+        os.environ[key] = value
 
     llm = ChatOpenAI(model="gpt-4o")
 
@@ -50,6 +54,7 @@ def extract_terms(api_key, source_text, target_text, source_lang, target_lang):
 st.title('术语提取工具')
 
 api_key = st.text_input('请输入OpenAI API密钥', type='password')
+custom_env = st.text_input('请输入自定义的OS环境变量 (格式: KEY=VALUE)', value='')
 source_text = st.text_area('请输入源语言文本')
 target_text = st.text_area('请输入目标语言文本（可选）')
 
@@ -62,7 +67,7 @@ if st.button('提取术语'):
     elif not target_text and (not source_lang or not target_lang):
         st.error('如果没有目标语言文本，请选择源语言和目标语言')
     else:
-        terms_data = extract_terms(api_key, source_text, target_text, source_lang, target_lang)
+        terms_data = extract_terms(api_key, custom_env, source_text, target_text, source_lang, target_lang)
 
         if terms_data:
             df = pd.DataFrame(terms_data)
